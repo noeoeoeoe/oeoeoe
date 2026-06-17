@@ -1,98 +1,77 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { Alert, Pressable, StyleSheet } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { Button } from '@/components/button';
+import { Card, Row } from '@/components/card';
+import { Screen } from '@/components/screen';
+import { TextField } from '@/components/text-field';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { useAddErrand, useDeleteErrand, useErrands, useToggleErrand } from '@/features/errands';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+export default function ErrandsScreen() {
+  const theme = useTheme();
+  const { data: errands, isLoading } = useErrands();
+  const add = useAddErrand();
+  const toggle = useToggleErrand();
+  const remove = useDeleteErrand();
+  const [title, setTitle] = useState('');
+
+  function submit() {
+    const t = title.trim();
+    if (!t) return;
+    add.mutate(
+      { title: t },
+      {
+        onSuccess: () => setTitle(''),
+        onError: (e) => Alert.alert('Could not add', String(e)),
+      },
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+    <Screen title="Errands">
+      <Card>
+        <Row>
+          <TextField
+            style={{ flex: 1 }}
+            placeholder="Add an errand…"
+            value={title}
+            onChangeText={setTitle}
+            onSubmitEditing={submit}
+            returnKeyType="done"
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+          <Button title="Add" loading={add.isPending} onPress={submit} />
+        </Row>
+      </Card>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {isLoading && <ThemedText themeColor="textSecondary">Loading…</ThemedText>}
+      {errands?.length === 0 && (
+        <ThemedText themeColor="textSecondary">Nothing to do. Nice.</ThemedText>
+      )}
+
+      {errands?.map((e) => (
+        <Card key={e.id}>
+          <Row>
+            <Pressable onPress={() => toggle.mutate({ id: e.id, done: !e.done })} hitSlop={8}>
+              <ThemedText style={styles.check}>{e.done ? '☑' : '☐'}</ThemedText>
+            </Pressable>
+            <ThemedText
+              style={[styles.label, e.done && { textDecorationLine: 'line-through' }]}
+              themeColor={e.done ? 'textSecondary' : 'text'}>
+              {e.title}
+            </ThemedText>
+            <Pressable onPress={() => remove.mutate(e.id)} hitSlop={8}>
+              <ThemedText style={{ color: theme.textSecondary }}>✕</ThemedText>
+            </Pressable>
+          </Row>
+        </Card>
+      ))}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  check: { fontSize: 22, lineHeight: 24 },
+  label: { flex: 1, fontSize: 16 },
 });
