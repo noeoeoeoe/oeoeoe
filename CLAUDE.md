@@ -9,10 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**Daily** — a personal life-tracking mobile app (React Native + Expo, TypeScript). Four
+**oeoeoe** — a personal life-tracking mobile app (React Native + Expo, TypeScript). Four
 features, one per tab: **Errands** (todos), **Gym** (workout sessions), **Meals**, **Weight**.
-Data lives in **Supabase** (hosted Postgres) and syncs across the user's devices, gated by a
-single passwordless email-OTP login.
+Data lives in **Supabase** (hosted Postgres). **Auth is currently anonymous** — the app
+auto-creates an anonymous Supabase session on launch (no login UI) because there's a single user.
+Email-OTP login is built but disabled; see "Auth" below.
 
 ## Commands
 
@@ -43,8 +44,9 @@ The app throws on launch without Supabase credentials. To make it run:
 
 **Routing — Expo Router, file-based.** Every file in `src/app/` is a route. `src/app/_layout.tsx`
 is the root: it wraps the tree in `QueryClientProvider` → `AuthProvider` → `ThemeProvider`, then
-renders `Gate`, which shows `<SignIn>` when signed out and `<AppTabs>` when signed in. The four
-tab screens are `index.tsx` (Errands), `gym.tsx`, `meals.tsx`, `weight.tsx`.
+renders `Gate`. `Gate` currently auto-signs-in anonymously when there's no session (see "Auth"),
+then renders `<AppTabs>`. The four tab screens are `index.tsx` (Errands), `gym.tsx`, `meals.tsx`,
+`weight.tsx`.
 
 **The tab bar is platform-split.** `src/components/app-tabs.tsx` uses native `NativeTabs` with SF
 Symbols (iOS/Android); `src/components/app-tabs.web.tsx` is a custom web tab list. Expo Router
@@ -82,3 +84,33 @@ styles.
 - **Dates:** use `src/lib/date.ts` (`todayISODate` is local-calendar, not UTC — avoids midnight
   off-by-one). Weight is keyed one-per-day and upserted on `(user_id, measured_on)`.
 - Install native deps with `npx expo install <pkg>` (picks SDK-compatible versions), not bare `npm install`.
+
+## Auth
+
+Login is **disabled** for now (single user). `Gate` in `src/app/_layout.tsx` calls
+`supabase.auth.signInAnonymously()` on launch — requires **"Allow anonymous sign-ins"** enabled in
+Supabase → Authentication → Sign In / Providers. The anonymous user persists in device storage, so
+it's stable across reloads but **does not sync across devices/browsers** (each gets its own anon
+user). RLS still applies normally (`auth.uid()` = the anon user's id).
+
+**Re-enabling email login:** the `SignIn` component (`src/components/sign-in.tsx`, email OTP) is
+intact but unused. Render it from `Gate` when there's no session instead of signing in
+anonymously. To preserve data created anonymously, link an email to the existing anon user via
+`supabase.auth.updateUser({ email })` rather than signing in fresh. Note: Supabase's default email
+template sends a magic *link*, not a code — to get the 6-digit code the `SignIn` UI expects, change
+the "Magic Link" template to use `{{ .Token }}` instead of `{{ .ConfirmationURL }}`. The built-in
+email sender is also rate-limited to a few/hour; configure custom SMTP (e.g. Resend) for real use.
+
+## Running on a phone
+
+Expo Go is a **dev tool only** (needs the Mac dev server running, and its SDK must match the
+project's — this project is SDK 56). For actual daily use, pick one:
+
+1. **PWA (easiest, free):** deploy the web build (`npx expo export --platform web` → host on
+   Vercel/Netlify), open in Safari, Add to Home Screen. Syncs via Supabase like the native app.
+2. **EAS Build → TestFlight (native, needs Apple Developer Program $99/yr):** `eas build -p ios`
+   then submit to TestFlight; rebuild every ~90 days.
+3. **Free Xcode sideload:** `npx expo run:ios` to a plugged-in device — but the app expires after
+   7 days. Fine for trying, tedious for daily use.
+
+Android is simpler: `eas build -p android` produces a free `.apk` to install directly (no fee, no expiry).

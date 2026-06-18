@@ -47,7 +47,7 @@ export function SignIn() {
     <ThemedView style={styles.fill}>
       <SafeAreaView style={styles.safe}>
         <ThemedView style={styles.inner}>
-          <ThemedText type="title">Daily</ThemedText>
+          <ThemedText type="title">oeoeoe</ThemedText>
           <ThemedText themeColor="textSecondary">
             Sign in with your email to sync across your devices.
           </ThemedText>

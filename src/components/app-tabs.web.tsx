@@ -29,6 +29,9 @@ export default function AppTabs() {
           <TabTrigger name="meals" href="/meals" asChild>
             <TabButton>Meals</TabButton>
           </TabTrigger>
+          <TabTrigger name="recipes" href="/recipes" asChild>
+            <TabButton>Recipes</TabButton>
+          </TabTrigger>
           <TabTrigger name="weight" href="/weight" asChild>
             <TabButton>Weight</TabButton>
           </TabTrigger>
@@ -57,7 +60,7 @@ export function CustomTabList(props: TabListProps) {
     <View {...props} style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
-          Daily
+          oeoeoe
         </ThemedText>
 
         {props.children}

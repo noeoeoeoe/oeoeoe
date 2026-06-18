@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 import type { Database } from '@/types/db';
 
@@ -17,7 +18,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    // Native: persist the session with AsyncStorage. Web: omit it so Supabase uses
+    // the browser's own localStorage — AsyncStorage's web shim breaks on window access.
+    ...(Platform.OS === 'web' ? {} : { storage: AsyncStorage }),
     autoRefreshToken: true,
     persistSession: true,
     // URL-based session detection is a web/OAuth concern; we use email OTP.

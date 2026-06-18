@@ -1,4 +1,4 @@
-# Daily 📓
+# oeoeoe 📓
 
 A personal life-tracking app I use every day: **errands**, **gym sessions**, **meals**, and
 **weight**. Built with Expo (React Native + TypeScript), synced across my devices via Supabase.

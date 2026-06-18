@@ -11,10 +11,17 @@ create table if not exists public.errands (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
   title      text not null,
+  amount     numeric,      -- structured quantity (e.g. 600)
+  unit       text,         -- canonical unit (e.g. 'g'); see src/constants/units.ts
   done       boolean not null default false,
   due_date   date,
   created_at timestamptz not null default now()
 );
+
+-- Add columns to errands created before they existed (idempotent).
+alter table public.errands add column if not exists amount numeric;
+alter table public.errands add column if not exists unit text;
+alter table public.errands add column if not exists quantity text;
 
 -- ── Workouts (gym sessions) ──────────────────────────────────────────────────
 create table if not exists public.workouts (
@@ -37,6 +44,30 @@ create table if not exists public.meals (
   created_at  timestamptz not null default now()
 );
 
+-- ── Recipes ──────────────────────────────────────────────────────────────────
+-- `ingredients` is a JSONB array of { name, quantity, calories } objects. They are
+-- always created/edited/displayed together with the recipe, so they live embedded
+-- here rather than in a separate child table.
+create table if not exists public.recipes (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  title       text not null,
+  ingredients jsonb not null default '[]'::jsonb,
+  created_at  timestamptz not null default now()
+);
+
+-- ── Condiments (staples) ─────────────────────────────────────────────────────
+-- Ingredient names you keep stocked (salt, oil, spices…). When a recipe is added
+-- to errands these are skipped by default. `name` is stored normalized
+-- (lowercased/trimmed) so it matches ingredient names regardless of casing.
+create table if not exists public.condiments (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, name)
+);
+
 -- ── Weight entries (one per day, upserted) ───────────────────────────────────
 create table if not exists public.weight_entries (
   id          uuid primary key default gen_random_uuid(),
@@ -53,7 +84,7 @@ create table if not exists public.weight_entries (
 do $$
 declare t text;
 begin
-  foreach t in array array['errands', 'workouts', 'meals', 'weight_entries'] loop
+  foreach t in array array['errands', 'workouts', 'meals', 'recipes', 'condiments', 'weight_entries'] loop
     execute format('alter table public.%I enable row level security', t);
     if not exists (
       select 1 from pg_policies where schemaname = 'public' and tablename = t and policyname = 'owner_all'

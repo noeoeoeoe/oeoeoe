@@ -19,7 +19,12 @@ export function Screen({ title, children }: { title: string; children: ReactNode
       contentContainerStyle={[
         styles.content,
         {
-          paddingTop: safe.top + Spacing.three,
+          // Web floats the tab bar at the top, so clear its height; native pads
+          // for the status bar only (its tab bar sits at the bottom).
+          paddingTop: Platform.select({
+            web: Spacing.six + Spacing.four,
+            default: safe.top + Spacing.three,
+          }),
           paddingBottom: safe.bottom + BottomTabInset + Spacing.four,
         },
       ]}
@@ -41,7 +46,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: Spacing.four,
-    ...Platform.select({ web: { paddingTop: Spacing.six } }),
   },
   inner: {
     width: '100%',
