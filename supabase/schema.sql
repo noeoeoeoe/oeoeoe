@@ -45,16 +45,20 @@ create table if not exists public.meals (
 );
 
 -- ── Recipes ──────────────────────────────────────────────────────────────────
--- `ingredients` is a JSONB array of { name, quantity, calories } objects. They are
--- always created/edited/displayed together with the recipe, so they live embedded
--- here rather than in a separate child table.
+-- `ingredients` is a JSONB array of { name, amount, unit, calories } objects and
+-- `instructions` a JSONB array of step strings. Both are always created/edited/
+-- displayed together with the recipe, so they live embedded here.
 create table if not exists public.recipes (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  title       text not null,
-  ingredients jsonb not null default '[]'::jsonb,
-  created_at  timestamptz not null default now()
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  title        text not null,
+  ingredients  jsonb not null default '[]'::jsonb,
+  instructions jsonb not null default '[]'::jsonb,
+  created_at   timestamptz not null default now()
 );
+
+-- Add instructions to recipes created before this column existed (idempotent).
+alter table public.recipes add column if not exists instructions jsonb not null default '[]'::jsonb;
 
 -- ── Condiments (staples) ─────────────────────────────────────────────────────
 -- Ingredient names you keep stocked (salt, oil, spices…). When a recipe is added

@@ -51,6 +51,7 @@ export type Recipe = {
   user_id: string;
   title: string;
   ingredients: RecipeIngredient[]; // jsonb column
+  instructions: string[]; // jsonb array of step strings
   created_at: string;
 };
 

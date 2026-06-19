@@ -22,10 +22,15 @@ export function useRecipes() {
 export function useAddRecipe() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { title: string; ingredients: RecipeIngredient[] }) => {
+    mutationFn: async (input: {
+      title: string;
+      ingredients: RecipeIngredient[];
+      instructions: string[];
+    }) => {
       const { error } = await supabase.from('recipes').insert({
         title: input.title,
         ingredients: input.ingredients,
+        instructions: input.instructions,
       });
       if (error) throw error;
     },
@@ -36,10 +41,15 @@ export function useAddRecipe() {
 export function useUpdateRecipe() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; title: string; ingredients: RecipeIngredient[] }) => {
+    mutationFn: async (input: {
+      id: string;
+      title: string;
+      ingredients: RecipeIngredient[];
+      instructions: string[];
+    }) => {
       const { error } = await supabase
         .from('recipes')
-        .update({ title: input.title, ingredients: input.ingredients })
+        .update({ title: input.title, ingredients: input.ingredients, instructions: input.instructions })
         .eq('id', input.id);
       if (error) throw error;
     },

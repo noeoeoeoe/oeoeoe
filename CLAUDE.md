@@ -10,10 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 **oeoeoe** — a personal life-tracking mobile app (React Native + Expo, TypeScript). Four
-features, one per tab: **Errands** (todos), **Gym** (workout sessions), **Meals**, **Weight**.
-Data lives in **Supabase** (hosted Postgres). **Auth is currently anonymous** — the app
-auto-creates an anonymous Supabase session on launch (no login UI) because there's a single user.
-Email-OTP login is built but disabled; see "Auth" below.
+tabs: **Errands** (todos), **Gym** (workout sessions), **Recipes**, and **Track** (meals + weight).
+Data lives in **Supabase** (hosted Postgres). **Auth is passwordless email magic-link**, with an
+anonymous "continue without an account" fallback; see "Auth" below.
 
 ## Commands
 
@@ -44,9 +43,10 @@ The app throws on launch without Supabase credentials. To make it run:
 
 **Routing — Expo Router, file-based.** Every file in `src/app/` is a route. `src/app/_layout.tsx`
 is the root: it wraps the tree in `QueryClientProvider` → `AuthProvider` → `ThemeProvider`, then
-renders `Gate`. `Gate` currently auto-signs-in anonymously when there's no session (see "Auth"),
-then renders `<AppTabs>`. The four tab screens are `index.tsx` (Errands), `gym.tsx`, `meals.tsx`,
-`weight.tsx`.
+renders `Gate`. `Gate` shows the email `SignIn` when there's no session, otherwise renders
+`<AppTabs>` (see "Auth"). The four tab screens are `index.tsx` (Errands), `gym.tsx`, `recipes.tsx`,
+and `track.tsx` (meals + weight). Recipes is itself a list → detail → form flow driven by local
+state (no nested routes), with components under `src/components/recipes/`.
 
 **The tab bar is platform-split.** `src/components/app-tabs.tsx` uses native `NativeTabs` with SF
 Symbols (iOS/Android); `src/components/app-tabs.web.tsx` is a custom web tab list. Expo Router
