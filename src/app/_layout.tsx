@@ -1,54 +1,41 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
+
+import '@/lib/pwa-meta'; // web: injects PWA / home-screen <head> tags (no-op on native)
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
+import { SignIn } from '@/components/sign-in';
+import { AccountProvider } from '@/lib/account';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { queryClient } from '@/lib/query';
-import { supabase } from '@/lib/supabase';
 
 /**
- * Login is disabled for now (single user). Instead of showing a sign-in screen,
- * we auto-create an anonymous Supabase session so Row Level Security (auth.uid())
- * still scopes every row to this device's user. The session persists in storage,
- * so it's the same anonymous user across reloads.
- *
- * To re-enable email login later: import `SignIn` from '@/components/sign-in' and
- * render it instead of signing in anonymously when there's no session. To keep the
- * data you created anonymously, link an email to the anon user with
- * `supabase.auth.updateUser({ email })` rather than signing in fresh.
+ * Auth gate. While the session restores from storage we show a spinner. With no
+ * session we render the email-OTP `SignIn` screen (which also offers "continue
+ * without an account" → anonymous). Once there's a session — anonymous or
+ * email — we render the app, wrapped so any screen can open the account sheet
+ * (e.g. an anonymous user linking an email to sync, via `supabase.auth.updateUser`).
  */
 function Gate() {
   const { session, loading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  const attempted = useRef(false);
 
-  useEffect(() => {
-    if (loading || session || attempted.current) return;
-    attempted.current = true;
-    supabase.auth.signInAnonymously().then(({ error }) => {
-      if (error) setError(error.message);
-    });
-  }, [loading, session]);
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
-  if (session) return <AppTabs />;
+  if (!session) return <SignIn />;
 
   return (
-    <View style={styles.center}>
-      {error ? (
-        <>
-          <Text style={styles.error}>{error}</Text>
-          <Text style={styles.hint}>
-            Enable “Allow anonymous sign-ins” in Supabase → Authentication →
-            Sign In / Providers, then reload.
-          </Text>
-        </>
-      ) : (
-        <ActivityIndicator />
-      )}
-    </View>
+    <AccountProvider>
+      <AppTabs />
+    </AccountProvider>
   );
 }
 
@@ -58,6 +45,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <StatusBar style="auto" />
           <AnimatedSplashOverlay />
           <Gate />
         </ThemeProvider>
@@ -68,6 +56,4 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  error: { textAlign: 'center', color: '#c0392b', fontWeight: '600' },
-  hint: { textAlign: 'center', color: '#888' },
 });

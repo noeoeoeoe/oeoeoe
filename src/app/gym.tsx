@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAddWorkout, useDeleteWorkout, useWorkouts } from '@/features/gym';
 import { formatDay } from '@/lib/date';
+import { parseDecimal } from '@/lib/quantity';
 
 export default function GymScreen() {
   const theme = useTheme();
@@ -25,7 +26,7 @@ export default function GymScreen() {
       {
         name: n,
         performed_at: new Date().toISOString(),
-        duration_min: duration ? Number(duration) : null,
+        duration_min: duration ? parseDecimal(duration) : null,
       },
       {
         onSuccess: () => {

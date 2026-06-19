@@ -22,19 +22,14 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="figure.run" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="meals">
-        <NativeTabs.Trigger.Label>Meals</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="fork.knife" />
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="recipes">
         <NativeTabs.Trigger.Label>Recipes</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="book" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="weight">
-        <NativeTabs.Trigger.Label>Weight</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="scalemass" />
+      <NativeTabs.Trigger name="track">
+        <NativeTabs.Trigger.Label>Track</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

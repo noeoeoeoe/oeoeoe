@@ -6,13 +6,13 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { useAccount } from '@/lib/account';
 
 export default function AppTabs() {
   return (
@@ -26,14 +26,11 @@ export default function AppTabs() {
           <TabTrigger name="gym" href="/gym" asChild>
             <TabButton>Gym</TabButton>
           </TabTrigger>
-          <TabTrigger name="meals" href="/meals" asChild>
-            <TabButton>Meals</TabButton>
-          </TabTrigger>
           <TabTrigger name="recipes" href="/recipes" asChild>
             <TabButton>Recipes</TabButton>
           </TabTrigger>
-          <TabTrigger name="weight" href="/weight" asChild>
-            <TabButton>Weight</TabButton>
+          <TabTrigger name="track" href="/track" asChild>
+            <TabButton>Track</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -56,18 +53,25 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
+  const { open } = useAccount();
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          oeoeoe
-        </ThemedText>
-
-        {props.children}
-
-        <Pressable style={styles.externalPressable} onPress={() => supabase.auth.signOut()}>
-          <ThemedText type="link">Sign out</ThemedText>
+      {/* App name + Account, above the tab bar */}
+      <View style={styles.header}>
+        <ThemedText type="smallBold">oeoeoe</ThemedText>
+        <Pressable onPress={open} hitSlop={8}>
+          <ThemedText type="link">Account</ThemedText>
         </Pressable>
+      </View>
+
+      {/* The tab bar itself — tabs centered, scrollable if they'd overflow */}
+      <ThemedView type="backgroundElement" style={styles.pill}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pillContent}>
+          {props.children}
+        </ScrollView>
       </ThemedView>
     </View>
   );
@@ -76,24 +80,34 @@ export function CustomTabList(props: TabListProps) {
 const styles = StyleSheet.create({
   tabListContainer: {
     position: 'absolute',
+    top: 0,
     width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
     alignItems: 'center',
-    flexDirection: 'row',
-  },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
     gap: Spacing.two,
-    maxWidth: MaxContentWidth,
   },
-  brandText: {
-    marginRight: 'auto',
+  header: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.two,
+  },
+  pill: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.five,
+  },
+  pillContent: {
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
   },
   pressed: {
     opacity: 0.7,
@@ -102,12 +116,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
   },
 });

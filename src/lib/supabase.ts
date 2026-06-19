@@ -18,12 +18,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Native: persist the session with AsyncStorage. Web: omit it so Supabase uses
-    // the browser's own localStorage — AsyncStorage's web shim breaks on window access.
-    ...(Platform.OS === 'web' ? {} : { storage: AsyncStorage }),
+    // Web: let Supabase pick the session out of the magic-link redirect URL, and use
+    // the implicit flow so the link works even when opened outside the tab that
+    // requested it (PKCE needs a verifier stored in that exact browser context).
+    // Native: persist with AsyncStorage (its web shim breaks on window access).
+    ...(Platform.OS === 'web'
+      ? { detectSessionInUrl: true, flowType: 'implicit' as const }
+      : { storage: AsyncStorage, detectSessionInUrl: false }),
     autoRefreshToken: true,
     persistSession: true,
-    // URL-based session detection is a web/OAuth concern; we use email OTP.
-    detectSessionInUrl: false,
   },
 });

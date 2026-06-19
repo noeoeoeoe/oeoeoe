@@ -22,13 +22,19 @@ export function Screen({ title, children }: { title: string; children: ReactNode
           // Web floats the tab bar at the top, so clear its height; native pads
           // for the status bar only (its tab bar sits at the bottom).
           paddingTop: Platform.select({
-            web: Spacing.six + Spacing.four,
+            // Clear the floating web header (app name + Account) + tab bar.
+            web: Spacing.six + Spacing.four + Spacing.four,
             default: safe.top + Spacing.three,
           }),
           paddingBottom: safe.bottom + BottomTabInset + Spacing.four,
         },
       ]}
-      keyboardShouldPersistTaps="handled">
+      keyboardShouldPersistTaps="handled"
+      // Keep focused inputs above the on-screen keyboard (iOS) and let a downward
+      // swipe dismiss it — both no-ops on web/Android.
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
+      showsVerticalScrollIndicator={false}>
       <ThemedView style={styles.inner}>
         <ThemedText type="title" style={styles.title}>
           {title}

@@ -87,19 +87,32 @@ styles.
 
 ## Auth
 
-Login is **disabled** for now (single user). `Gate` in `src/app/_layout.tsx` calls
-`supabase.auth.signInAnonymously()` on launch — requires **"Allow anonymous sign-ins"** enabled in
-Supabase → Authentication → Sign In / Providers. The anonymous user persists in device storage, so
-it's stable across reloads but **does not sync across devices/browsers** (each gets its own anon
-user). RLS still applies normally (`auth.uid()` = the anon user's id).
+Email login is **enabled** (passwordless OTP), with an anonymous fallback. `Gate` in
+`src/app/_layout.tsx`:
 
-**Re-enabling email login:** the `SignIn` component (`src/components/sign-in.tsx`, email OTP) is
-intact but unused. Render it from `Gate` when there's no session instead of signing in
-anonymously. To preserve data created anonymously, link an email to the existing anon user via
-`supabase.auth.updateUser({ email })` rather than signing in fresh. Note: Supabase's default email
-template sends a magic *link*, not a code — to get the 6-digit code the `SignIn` UI expects, change
-the "Magic Link" template to use `{{ .Token }}` instead of `{{ .ConfirmationURL }}`. The built-in
-email sender is also rate-limited to a few/hour; configure custom SMTP (e.g. Resend) for real use.
+- **no session** → renders `SignIn` (`src/components/sign-in.tsx`): enter email → 6-digit code, or
+  *"Continue without an account"* → `supabase.auth.signInAnonymously()`.
+- **any session** (anonymous or email) → renders the app, wrapped in `AccountProvider`
+  (`src/lib/account.tsx`) so any screen can open the account sheet.
+
+Auth uses passwordless **magic links** (not OTP codes — see "Email delivery" below). `SignIn` is
+**adaptive** to the current session: signed out → *"Email me a link"*; **anonymous** → *"Add email &
+sync"* links an email to the *current* anon user via `supabase.auth.updateUser({ email })` (so data
+created anonymously is preserved and becomes syncable) **or** sign in to an existing account;
+**email user** → shows the email + Sign out. Clicking the emailed link returns to `emailRedirectTo`
+(web: `window.location.origin`; native: the `oeoeoe://` scheme) and `detectSessionInUrl` +
+`flowType: 'implicit'` (web, set in `src/lib/supabase.ts`) establish the session. The in-app entry
+point is the **Account** button in the web tab bar (`app-tabs.web.tsx`, via `useAccount()`); the
+native `NativeTabs` bar has no such button yet, and native magic-link redirect handling isn't wired.
+Still requires **"Allow anonymous sign-ins"** enabled, and the deploy URL (+ `localhost` for dev)
+added to **Supabase → Authentication → URL Configuration → Redirect URLs**. RLS is unchanged —
+`auth.uid()` scopes rows whether the user is anonymous or email.
+
+**Email delivery — why magic links, not codes.** Supabase only lets you customize email templates
+(and raises the ~few/hour rate limit) once **custom SMTP** is configured. A 6-digit-code flow needs
+the template to emit `{{ .Token }}`, so without SMTP it's impossible — but the *default* email sends
+a magic link, which works as-is. Hence magic links. For heavier use, configure custom SMTP (e.g.
+Resend) to lift the rate limit (and you could then switch back to codes if preferred).
 
 ## Running on a phone
 

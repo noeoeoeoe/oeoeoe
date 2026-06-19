@@ -16,7 +16,7 @@ import {
   useToggleErrand,
   useUpdateErrand,
 } from '@/features/errands';
-import { formatQty } from '@/lib/quantity';
+import { formatQty, parseDecimal } from '@/lib/quantity';
 import type { Errand } from '@/types/db';
 
 type Field = 'name' | 'quantity';
@@ -71,7 +71,7 @@ export default function ErrandsScreen() {
     // Quantity: parse a number (blank → cleared). Setting a structured amount also
     // clears any legacy free-text quantity so the two don't disagree.
     const raw = editText.trim();
-    const n = Number(raw);
+    const n = parseDecimal(raw);
     const amount = raw && !Number.isNaN(n) ? n : null;
     const unit = amount != null ? editUnit : null;
     update.mutate(

@@ -19,7 +19,7 @@ import {
   useUpdateRecipe,
 } from '@/features/recipes';
 import { useTheme } from '@/hooks/use-theme';
-import { formatQty } from '@/lib/quantity';
+import { formatQty, parseDecimal } from '@/lib/quantity';
 import type { Recipe, RecipeIngredient } from '@/types/db';
 
 type DraftIngredient = { name: string; amount: string; unit: string | null; calories: string };
@@ -136,7 +136,7 @@ export default function RecipesScreen() {
   }
 
   // Live total of whatever calories have been typed so far.
-  const draftTotal = ingredients.reduce((sum, i) => sum + (i.calories ? Number(i.calories) : 0), 0);
+  const draftTotal = ingredients.reduce((sum, i) => sum + (i.calories ? parseDecimal(i.calories) : 0), 0);
 
   function submit() {
     const t = title.trim();
@@ -145,9 +145,9 @@ export default function RecipesScreen() {
       .filter((i) => i.name.trim())
       .map((i) => ({
         name: i.name.trim(),
-        amount: i.amount ? Number(i.amount) : null,
+        amount: i.amount ? parseDecimal(i.amount) : null,
         unit: i.unit,
-        calories: i.calories ? Number(i.calories) : null,
+        calories: i.calories ? parseDecimal(i.calories) : null,
       }));
     if (cleaned.length === 0) {
       Alert.alert('Add an ingredient', 'A recipe needs at least one named ingredient.');
